@@ -1,0 +1,117 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using WebAppTwoPointsHospital.Models;
+
+namespace WebAppTwoPointsHospital.Controllers;
+
+public class UsuarioController : Controller
+{
+    private readonly Contexto _context;
+
+    public UsuarioController(Contexto context)
+    {
+        _context = context;
+    }
+
+    // Get -> Va para página Login
+    public IActionResult Login()
+    {
+        return View();
+    }
+
+    // Get -> Vai para a página Cadastro
+    [HttpGet]
+    public IActionResult Cadastro()
+    {
+        return View();
+    }
+
+    //Get -> Vai para a página Usuários
+    [HttpGet]
+    public IActionResult Usuarios()
+    {
+        List<Usuario> usuarios = _context.Usuarios.ToList();
+        return View(usuarios);
+    }
+
+    // Get -> Vai para a página Detalhes
+    [HttpGet]
+    public IActionResult Detalhes(int id)
+    {
+        var usuario = _context.Usuarios.FirstOrDefault(u => u.UsuarioId == id); 
+        
+        return View(usuario);
+    }
+
+    //Get -> Vai para a página Deletar
+    [HttpGet]
+    public IActionResult Deletar(int id)
+    {
+        var usuario = _context.Usuarios.FirstOrDefault(u => u.UsuarioId == id);
+        return View(usuario);
+    }
+
+    // POST -> Cadastra Usuário
+    [HttpPost]
+    public IActionResult Cadastro(Usuario usuario)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(usuario);
+        }
+
+        Usuario novoUsuario = new Usuario
+        {
+            Nome = usuario.Nome,
+            Cpf = usuario.Cpf,
+            Email = usuario.Email,
+            Senha = usuario.Senha
+        };
+
+        _context.Usuarios.Add(novoUsuario);
+        _context.SaveChanges();
+        
+        var logado = HttpContext.Session.GetInt32("UserID");
+
+        if (logado != null)
+        {
+            return RedirectToAction("Usuarios", "Usuario");
+        }
+        
+        return RedirectToAction("Login");
+    }
+
+    //Post -> Valida Login
+    [HttpPost]
+    public IActionResult Login(string email, string senha)
+    {
+        var user = _context.Usuarios.FirstOrDefault(u => u.Email == email && u.Senha == senha);
+        
+        if (user == null)
+        {
+            ModelState.AddModelError("", "Email ou senha inválidos");
+            return View();
+        }
+
+        HttpContext.Session.SetInt32("UserID", user.UsuarioId);
+        
+        return RedirectToAction("Index", "Estoque");
+    }
+
+    public IActionResult DeletarUsuario(int id)
+    {
+        var user = _context.Usuarios.FirstOrDefault(u => u.UsuarioId == id);
+        _context.Usuarios.Remove(user);
+        _context.SaveChanges();
+
+        return RedirectToAction("Usuarios", "Usuario");
+    }
+
+    // Get -> Desloga o usuário
+    [HttpGet]
+    public IActionResult Deslogar()
+    {
+        HttpContext.Session.Clear();
+        return RedirectToAction("Login");
+    }
+    
+}
